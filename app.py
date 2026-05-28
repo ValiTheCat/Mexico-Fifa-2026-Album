@@ -113,7 +113,7 @@ def get_sheet():
         scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open("fifa2026_tracker").sheet1
+        sheet = client.open("fifa2026_tracker").worksheet("fifa2026_tracker")
         return sheet
     except Exception as e:
         st.error(f"Google Sheets connection failed: {e}")
