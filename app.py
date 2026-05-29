@@ -37,7 +37,13 @@ st.markdown("""
 .r-pill { font-size:8px; padding:1px 4px; border-radius:8px; font-weight:700; border:1.5px solid transparent; cursor:default; }
 .prog-bg   { height:4px; background:#374151; border-radius:2px; margin-bottom:10px; }
 .prog-fill { height:4px; border-radius:2px; transition:width .3s; }
-.team-hdr  { display:flex; align-items:center; gap:8px; }
+.in-btn {
+    width:100%; margin-top:4px; padding:5px 4px;
+    border-radius:8px; font-size:11px; font-weight:600;
+    text-align:center; cursor:default;
+}
+/* Hide the Streamlit toggle buttons visually — they still work on click */
+div[data-testid="stButton"] { height:0; overflow:hidden; margin:0; padding:0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -252,95 +258,146 @@ with st.sidebar:
         do_save(); st.success("¡Guardado!" if lang=="es" else "Saved!")
 
 # ── Render sticker card ────────────────────────────────────────────────────────
+
 def make_card_html(s):
-    sid       = s["id"]
-    is_owned  = sid in owned
-    r         = get_r(sid, s["rarity"])
-    rc        = RARITY_CONFIG[r]
-    nm        = s["es"] if lang=="es" else s["en"]
-    short     = nm[:13]+"\u2026" if len(nm)>13 else nm
-    tc        = s["color"]
-    border_c  = rc["border"] if show_rar else tc
-    bg_c      = rc["bg"]     if show_rar else "#111827"
-    state_cls = "s-owned" if is_owned else "s-missing"
-    img_url   = f"{GITHUB_IMG}{sid}.jpg"
-    emoji     = {"badge":"\U0001f6e1\ufe0f","team_photo":"\U0001f465","special":"\U0001f3c6"}.get(s["stype"],"\u26bd")
-    ph_bg     = tc + "33"
-    id_color  = tc if not show_rar else "#9ca3af"
-    chk       = '<div class="s-chk">\u2713</div>' if is_owned else ""
-    pills     = ""
+    sid      = s["id"]
+    is_owned = sid in owned
+    r        = get_r(sid, s["rarity"])
+    rc       = RARITY_CONFIG[r]
+    nm       = s["es"] if lang=="es" else s["en"]
+    short    = (nm[:15] + "\u2026") if len(nm) > 15 else nm
+    tc       = s["color"]
+    border_c = rc["border"] if show_rar else tc
+    bg_c     = rc["bg"]     if show_rar else "#1a1f2e"
+    opacity  = "1.0" if is_owned else "0.3"
+    gs       = "0%" if is_owned else "80%"
+    img_url  = GITHUB_IMG + sid + ".jpg"
+    emoji    = {"badge": "\U0001f6e1\ufe0f", "team_photo": "\U0001f465", "special": "\U0001f3c6"}.get(s["stype"], "\u26bd")
+    ph_bg    = tc + "33"
+    id_col   = rc["color"] if show_rar else tc
+    chk      = "\u2713 " if is_owned else ""
+    btn_txt  = (chk + "Tengo") if lang == "es" else (chk + "Owned")
+    btn_bg   = "#16a34a33" if is_owned else "#ffffff11"
+    btn_bdr  = "#16a34a" if is_owned else "#ffffff22"
+    btn_col  = "#34d399" if is_owned else "#9ca3af"
+
+    pills = ""
     if show_rar:
         parts = []
         for rk in RARITY_CONFIG:
-            bg2  = RARITY_CONFIG[rk]["bg"]
-            cl2  = RARITY_CONFIG[rk]["color"]
-            bdr  = RARITY_CONFIG[rk]["border"] if rk==r else "transparent"
-            parts.append(f'<span class="r-pill" style="background:{bg2};color:{cl2};border-color:{bdr};">{rk[0].upper()}</span>')
+            bg2 = RARITY_CONFIG[rk]["bg"]
+            cl2 = RARITY_CONFIG[rk]["color"]
+            bdr = RARITY_CONFIG[rk]["border"] if rk == r else "transparent"
+            lbl = rk[0].upper()
+            parts.append(
+                '<span class="r-pill" style="background:' + bg2 +
+                ';color:' + cl2 + ';border-color:' + bdr + ';">' + lbl + '</span>'
+            )
         pills = '<div class="rarity-row">' + "".join(parts) + '</div>'
-    return (f'<div class="s-card {state_cls}" style="flex:1;min-width:0;border-color:{border_c};background:{bg_c};">' +
-            f'<img class="s-img" src="{img_url}" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" style="display:block;"/>' +
-            f'<div class="s-ph" style="background:{ph_bg};display:none;">{emoji}</div>' +
-            f'<div class="s-id" style="color:{id_color};">{sid}</div>' +
-            f'<div class="s-name">{short}</div>' +
-            chk + pills + '</div>')
+
+    img_tag = (
+        '<img class="s-img" src="' + img_url + '" '
+        'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" '
+        'style="display:block;"/>'
+    )
+    ph_tag = '<div class="s-ph" style="background:' + ph_bg + ';display:none;">' + emoji + '</div>'
+    btn_tag = (
+        '<div class="in-btn" style="background:' + btn_bg +
+        ';border:1px solid ' + btn_bdr + ';color:' + btn_col + ';">' +
+        btn_txt + '</div>'
+    )
+
+    return (
+        '<div class="s-card" style="flex:1;min-width:0;border-color:' + border_c +
+        ';background:' + bg_c + ';opacity:' + opacity +
+        ';filter:grayscale(' + gs + ');">' +
+        img_tag + ph_tag +
+        '<div class="s-id" style="color:' + id_col + ';">' + sid + '</div>' +
+        '<div class="s-name">' + short + '</div>' +
+        pills + btn_tag +
+        '</div>'
+    )
+
 
 # ── Main ───────────────────────────────────────────────────────────────────────
-st.markdown("## " + ("\U0001f4cb Copa Mundial FIFA 2026 \u2014 Mi \u00c1lbum" if lang=="es" else "\U0001f4cb FIFA World Cup 2026 \u2014 Sticker Collection"))
+st.markdown("## " + ("\U0001f4cb Copa Mundial FIFA 2026 \u2014 Mi \u00c1lbum" if lang == "es" else "\U0001f4cb FIFA World Cup 2026 \u2014 Sticker Collection"))
 
-SKIP = {"Todos los equipos","All teams","FIFA Especial","FIFA Special"}
-sections = [("FIFA Especial" if lang=="es" else "FIFA Special","FWC","\U0001f30d","#6d28d9")] + \
-           [(t["es" if lang=="es" else "en"],t["code"],t["flag"],t["color"]) for t in TEAMS]
+SKIP = {"Todos los equipos", "All teams", "FIFA Especial", "FIFA Special"}
+sections = (
+    [("FIFA Especial" if lang == "es" else "FIFA Special", "FWC", "\U0001f30d", "#6d28d9")] +
+    [(t["es" if lang == "es" else "en"], t["code"], t["flag"], t["color"]) for t in TEAMS]
+)
+
+COLS = 3
 
 for sec_name, code, flag, color in sections:
-    sec_s = [s for s in ALL_STICKERS if s["team"]==code]
+    sec_s  = [s for s in ALL_STICKERS if s["team"] == code]
     show_s = []
     for s in sec_s:
-        nm = s["es"] if lang=="es" else s["en"]
-        if search and search.lower() not in nm.lower() and search.lower() not in sec_name.lower(): continue
+        nm = s["es"] if lang == "es" else s["en"]
+        if search and search.lower() not in nm.lower() and search.lower() not in sec_name.lower():
+            continue
         is_owned = s["id"] in owned
-        if flt_owned in ("Solo tengo","Owned only") and not is_owned: continue
-        if flt_owned in ("Me faltan","Missing only") and is_owned: continue
+        if flt_owned in ("Solo tengo", "Owned only") and not is_owned:
+            continue
+        if flt_owned in ("Me faltan", "Missing only") and is_owned:
+            continue
         show_s.append(s)
 
-    if sel_team not in SKIP and sec_name != sel_team: continue
-    if not show_s: continue
+    if sel_team not in SKIP and sec_name != sel_team:
+        continue
+    if not show_s:
+        continue
 
     t_own = sum(1 for s in sec_s if s["id"] in owned)
-    t_pct = round(t_own/len(sec_s)*100)
+    t_pct = round(t_own / len(sec_s) * 100)
 
-    with st.expander(f"{flag}  **{sec_name}** \u2014 {t_own}/{len(sec_s)} ({t_pct}%)",
-                     expanded=(sel_team not in SKIP)):
-        st.markdown(f'<div class="prog-bg"><div class="prog-fill" style="width:{t_pct}%;background:{color};"></div></div>',
-                    unsafe_allow_html=True)
-        # Render cards in rows of 5 as single HTML block
-        for row_start in range(0, len(show_s), 5):
-            row = show_s[row_start:row_start+5]
-            # Pad row
-            html_row = "".join(make_card_html(s) for s in row)
-            while len(row) < 5:
-                html_row += '<div style="flex:1;min-width:0;"></div>'
-                row.append(None)
-            st.markdown(f'<div style="display:flex;gap:6px;margin-bottom:2px;">{html_row}</div>',
-                        unsafe_allow_html=True)
-            # Buttons row
-            btn_cols = st.columns(5)
-            for i, s in enumerate(row):
-                if s is None: continue
+    with st.expander(
+        flag + "  **" + sec_name + "** \u2014 " + str(t_own) + "/" + str(len(sec_s)) + " (" + str(t_pct) + "%)",
+        expanded=(sel_team not in SKIP)
+    ):
+        st.markdown(
+            '<div class="prog-bg"><div class="prog-fill" style="width:' + str(t_pct) + '%;background:' + color + ';"></div></div>',
+            unsafe_allow_html=True
+        )
+
+        for row_start in range(0, len(show_s), COLS):
+            row = show_s[row_start:row_start + COLS]
+            html_cards = "".join(make_card_html(s) for s in row)
+            padded = list(row)
+            while len(padded) < COLS:
+                html_cards += '<div style="flex:1;min-width:0;"></div>'
+                padded.append(None)
+
+            st.markdown(
+                '<div style="display:flex;gap:8px;margin-bottom:4px;">' + html_cards + '</div>',
+                unsafe_allow_html=True
+            )
+
+            btn_cols = st.columns(COLS)
+            for i, s in enumerate(padded):
+                if s is None:
+                    continue
                 sid      = s["id"]
                 is_owned = sid in owned
                 r        = get_r(sid, s["rarity"])
                 with btn_cols[i]:
-                    lbl = ("\u2713 Tengo" if is_owned else "+ Tengo") if lang=="es" else ("\u2713 Owned" if is_owned else "+ Own")
-                    if st.button(lbl, key=f"{ver}_{sid}", use_container_width=True):
-                        if is_owned: owned.discard(sid)
-                        else:        owned.add(sid)
+                    lbl = ("\u2713 Tengo" if is_owned else "+ Tengo") if lang == "es" else ("\u2713 Owned" if is_owned else "+ Own")
+                    if st.button(lbl, key=ver + "_" + sid, use_container_width=True):
+                        if is_owned:
+                            owned.discard(sid)
+                        else:
+                            owned.add(sid)
                         st.session_state.dirty = True
                         st.rerun()
                     if show_rar:
-                        keys = list(RARITY_CONFIG.keys())
-                        new_r = st.selectbox("", keys, index=keys.index(r),
-                                              format_func=lambda x: f"{RARITY_CONFIG[x]['star']} {RARITY_CONFIG[x]['en']}",
-                                              key=f"r_{ver}_{sid}", label_visibility="collapsed")
+                        keys  = list(RARITY_CONFIG.keys())
+                        new_r = st.selectbox(
+                            "", keys, index=keys.index(r),
+                            format_func=lambda x: RARITY_CONFIG[x]["star"] + " " + RARITY_CONFIG[x]["en"],
+                            key="r_" + ver + "_" + sid,
+                            label_visibility="collapsed"
+                        )
                         if new_r != r:
                             rmap[sid] = new_r
                             st.session_state.dirty = True
