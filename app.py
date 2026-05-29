@@ -345,14 +345,14 @@ def render_sticker(s, col):
 
     pills_html = ""
     if show_rar:
-        pills = "".join(
-            f'<span class="r-pill" style="background:{RARITY_CONFIG[rk][\"bg\"]};'
-            f'color:{RARITY_CONFIG[rk][\"color\"]};'
-            f'border-color:{ RARITY_CONFIG[rk][\"border\"] if rk==r else \"transparent\"};">'
-            f'{rk[0].upper()}</span>'
-            for rk in RARITY_CONFIG
-        )
-        pills_html = f'<div class="rarity-row">{pills}</div>'
+        pill_parts = []
+        for rk in RARITY_CONFIG:
+            bg    = RARITY_CONFIG[rk]["bg"]
+            col   = RARITY_CONFIG[rk]["color"]
+            bdr   = RARITY_CONFIG[rk]["border"] if rk == r else "transparent"
+            lbl   = rk[0].upper()
+            pill_parts.append(f'<span class="r-pill" style="background:{bg};color:{col};border-color:{bdr};">{lbl}</span>')
+        pills_html = '<div class="rarity-row">' + "".join(pill_parts) + '</div>'
 
     state_cls = "s-owned" if is_owned else "s-missing"
     card_html = f"""
